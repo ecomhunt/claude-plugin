@@ -1,0 +1,8 @@
+{
+	"mcpServers": {
+		"ecomhunt": {
+			"type": "http",
+			"url": "https://ecomhunt.com/api/mcp"
+		}
+	}
+}

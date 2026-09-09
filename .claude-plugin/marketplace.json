@@ -1,0 +1,16 @@
+{
+	"name": "ecomhunt",
+	"owner": {
+		"name": "Ecomhunt"
+	},
+	"metadata": {
+		"description": "Ecomhunt product research and launch planning for Claude."
+	},
+	"plugins": [
+		{
+			"name": "ecomhunt",
+			"source": "./",
+			"description": "Connect Claude to Ecomhunt for product research and a guided Shopify product launch plan."
+		}
+	]
+}
