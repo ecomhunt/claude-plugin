@@ -1,36 +1,17 @@
-# Ecomhunt Claude Plugin
+# Ecomhunt Claude Marketplace
 
-The Ecomhunt Claude Plugin connects Claude to Ecomhunt and guides you through a
-complete, research-backed Shopify product launch plan.
-
-## What Ecomhunt Does
-
-- discovers and evaluates product opportunities;
-- helps you choose a product, market, buyer profile, brand direction, and name;
-- creates product-page strategy, advertising concepts, and creative assets;
-- preserves your project so you can resume it in a later conversation;
-- asks for approval before important decisions and credit charges;
-- packages the approved launch strategy and creative assets for download.
-
-This version prepares the launch package. It does not create a Shopify store or
-publish advertising campaigns.
+Connect Claude to Ecomhunt for product research and guided Shopify launch planning.
 
 ## Install
 
-1. Open **Customize** in Claude.
-2. Open **Plugins**, click **Add** (the **+** button), then **Add marketplace**.
+1. Open **Customize** in Claude and go to **Plugins**.
+2. Click **Add**, then **Add marketplace**.
 3. Select **Add from repository**.
 4. Enter `https://github.com/ecomhunt/claude-plugin`.
 5. Leave **Sync automatically** checked and click **Sync**.
-6. Open the Ecomhunt marketplace, install the **Ecomhunt** plugin, and enable it.
-7. Connect the bundled Ecomhunt connector and complete OAuth sign-in.
+6. Install and enable the **Ecomhunt** plugin.
+7. Connect its Ecomhunt connector and complete OAuth sign-in.
 8. Start a fresh conversation.
-
-If you have `ecomhunt-claude-plugin.zip`, you can also upload it through Claude's
-plugin file-upload option. See [setup instructions](SETUP.md) for ZIP installation
-and connection help.
-
-## Start Your First Project
 
 Ask Claude:
 
@@ -38,27 +19,23 @@ Ask Claude:
 Build me a $10K/month Shopify store. My budget is $500.
 ```
 
-Ecomhunt will begin product discovery and guide you through the required review
-and approval steps.
+See the [plugin guide](plugins/ecomhunt/README.md) for features and resuming a
+project, or [setup instructions](plugins/ecomhunt/SETUP.md) for ZIP installation
+and connection help.
 
-## Resume An Existing Project
+## Repository Layout
 
-In a fresh conversation, ask:
+The marketplace catalog is `.claude-plugin/marketplace.json`. It references the
+complete plugin at `./plugins/ecomhunt`, including its manifest, MCP configuration,
+skills, and setup guides.
 
-```text
-Resume my most recent active Ecomhunt launch project.
-```
+To publish this marketplace, copy this directory's contents, including the hidden
+`.claude-plugin` directory, to the GitHub repository root. Keep `plugins/ecomhunt`
+in place.
 
-Claude will retrieve the saved project and continue from its next unfinished
-step.
+When updating the previous layout, remove the old root `.claude-plugin/plugin.json`,
+`.mcp.json`, `skills/`, and `SETUP.md`; those files now belong inside
+`plugins/ecomhunt/`. Keep the root `.claude-plugin/marketplace.json`.
 
-## Security And Support
-
-Do not paste API keys, access tokens, passwords, or payment-card details into
-Claude. Authentication must happen through the Ecomhunt OAuth page.
-
-For connection help, see [SETUP.md](SETUP.md) or visit https://ecomhunt.com/support.
-
-Privacy policy: https://ecomhunt.com/privacy-policy
-
-Terms: https://ecomhunt.com/terms-conditions
+Validate the checkout with `node scripts/validate.mjs`. For a direct plugin upload,
+use `ecomhunt-claude-plugin.zip`, whose contents start at the plugin directory.

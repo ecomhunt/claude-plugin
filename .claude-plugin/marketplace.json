@@ -9,7 +9,7 @@
 	"plugins": [
 		{
 			"name": "ecomhunt",
-			"source": "./",
+			"source": "./plugins/ecomhunt",
 			"description": "Connect Claude to Ecomhunt for product research and a guided Shopify product launch plan."
 		}
 	]
