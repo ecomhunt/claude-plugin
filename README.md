@@ -37,5 +37,9 @@ When updating the previous layout, remove the old root `.claude-plugin/plugin.js
 `.mcp.json`, `skills/`, and `SETUP.md`; those files now belong inside
 `plugins/ecomhunt/`. Keep the root `.claude-plugin/marketplace.json`.
 
-Validate the checkout with `node scripts/validate.mjs`. For a direct plugin upload,
-use `ecomhunt-claude-plugin.zip`, whose contents start at the plugin directory.
+For a direct plugin upload, use `ecomhunt-claude-plugin.zip`, whose contents start
+at the plugin directory.
+
+Before publishing a release, update both the nested plugin manifest version and
+the skill's frontmatter version. Keep them identical so installed clients can
+detect the update.

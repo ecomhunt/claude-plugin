@@ -1,7 +1,7 @@
 ---
 name: ecomhunt-product-launch
 description: This skill should be used whenever the user asks to "build me a Shopify store", "build me a $10K/month store", "find me a winning product for my store", "find me a $10K winning product", "start an Ecomhunt launch project", or "resume my Ecomhunt launch project". Use it for multi-stage Ecomhunt launch work involving a new store or an existing Shopify store, even when the user does not explicitly mention MCP. Do not use it for a simple one-off request to list products or retrieve one known product.
-version: 0.19.0
+version: 0.19.1
 ---
 
 # Ecomhunt Product Launch
@@ -377,6 +377,16 @@ reliably.
    the template treatment when compiling the plan. Templates do not enable visual
    QA or automatic quality retries. Resume existing quoted runs from their saved
    plans; do not regenerate them just to apply newer templates.
+   New Facebook ads must include `adDesign` with a distinct saved
+   `adCopyConceptId`, `layout` (`bold_product`, `editorial_lifestyle`, or
+   `feature_led`), `typography`, `textPlacement`, `showCta`, and
+   `supportingText` (null or the exact saved hook or description).
+   Match the selected concept's visual story and brand direction. The server
+   inserts its exact headline and CTA; do not invent alternative wording in
+   `promptDraft`. Keep product images text-free, but design finished ads with
+   readable typography and graphic composition. Do not reserve empty space for
+   copy to be added later. Exact font-file reproduction is not guaranteed.
+   On infrastructure recovery only, resubmit returned `legacyAdBriefs` unchanged.
 6. For every brief, supply its purpose, strategy, ratio, composition, visual
    hierarchy, buyer context, palette use, product-invariant IDs,
    verified-fact IDs, forbidden content, copy-safe area, Claude-authored prompt
@@ -419,6 +429,9 @@ reliably.
     image in its purpose group before asking for a decision. Do not replace
     these native groups with a contact sheet or one mixed carousel. After all
     three groups return, call `get_launch_result` with `view: creative_review`.
+    Pair each designed image with its own `adDesign.copySnapshot`, never by
+    list position. Additional concepts remain text-only. Have the user inspect
+    the rendered headline and CTA as part of the existing image approval.
 12. Use `get_creative_asset` only when the user asks to inspect one exact
     artifact more closely. It is read-only and must never regenerate an asset.
 13. Ask the user either to approve the whole package or reject exact artifact
@@ -429,7 +442,20 @@ reliably.
     `decision: reject`, exact `details.approvedArtifactIds`, exact
     `details.rejectedArtifactIds`, and one matching `{ artifactId, feedback }`
     item in `details.revisions` for every rejected asset.
-15. Call `prepare_creative_revision` only for the rejected assets. Then call
+15. Call `prepare_creative_revision` only for the rejected assets.
+    Visual-only feedback must preserve the saved copy. When the user explicitly
+    requests wording changes to a designed ad, supply `copyUpdate` with the
+    complete headline, hook, primaryText, description, and CTA. Show the exact
+    updated copy with the quote; never silently change attached text or use
+    visual feedback to override the saved wording. Use `adDesignUpdate` for
+    explicit layout, typography, textPlacement, supportingText, or showCta changes;
+    adding/removing the on-image CTA requires setting `showCta`, not only feedback.
+    For a rejected legacy plain ad, retrieve the current creative context and
+    supply a complete `adUpgradeBrief` for the same slot on
+    `prepare_creative_revision`. It must include `adDesign` and valid current
+    source/fact/invariant IDs. This upgrades only that rejected asset and leaves
+    the other assets untouched; do not submit a new nine-asset package.
+    Then call
     `get_launch_checkpoint` with `checkpoint: credit`, present the
     exact revision quote, and require explicit approval of that charge before calling
     `start_creative_generation`. Continue generation internally, show the affected

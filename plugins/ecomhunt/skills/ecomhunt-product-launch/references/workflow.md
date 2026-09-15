@@ -86,8 +86,16 @@
     Use the supplied `constraints.promptTemplates` for product and ad treatments,
     preserving accepted purposes, compositions, advertising strategies, and crops.
     Ecomhunt compiles the templates around the product-specific briefs. Existing
-    quoted plans and revisions keep their saved prompts; automated visual QA
-    remains off.
+    quoted plans keep their saved prompts; requested designed-ad revisions
+    rebuild from their saved structured brief. Automated visual QA remains off.
+    For each new ad, supply `adDesign` tied to one distinct saved concept ID.
+    The generated headline and visible CTA must use that concept's exact text.
+    Keep long primary text outside the image. Pair reviews and delivery by the
+    saved copy snapshot, never by array order. Existing quoted runs stay intact.
+    For design revisions use `adDesignUpdate`, including `showCta` for CTA
+    visibility. To upgrade one rejected legacy plain ad, supply a complete
+    same-slot `adUpgradeBrief` to `prepare_creative_revision` using current
+    creative context IDs. Never restart the full package for that upgrade.
 31. Call `submit_creative_package`. Correct field-level validation errors
     internally while the selected name and strategy remain unchanged.
 32. Only after valid submission, call `get_launch_checkpoint` with
