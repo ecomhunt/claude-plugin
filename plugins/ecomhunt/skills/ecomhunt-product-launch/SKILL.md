@@ -1,7 +1,7 @@
 ---
 name: ecomhunt-product-launch
 description: This skill should be used whenever the user asks to "build me a Shopify store", "build me a $10K/month store", "find me a winning product for my store", "find me a $10K winning product", "start an Ecomhunt launch project", or "resume my Ecomhunt launch project". Use it for multi-stage Ecomhunt launch work involving a new store or an existing Shopify store, even when the user does not explicitly mention MCP. Do not use it for a simple one-off request to list products or retrieve one known product.
-version: 0.19.1
+version: 0.20.0
 ---
 
 # Ecomhunt Product Launch
@@ -178,8 +178,10 @@ reliably.
 
 1. At `brief_ready`, call `run_product_validation` once with the project ID and
    a stable idempotency key.
-2. Supply a niche, category, query, or date window only when it follows from the
-   saved project or the user's current request. Do not invent filters.
+2. Supply filters only from the saved project or the user's current request.
+   Call `get_product_categories` to resolve real category names and IDs, then
+   use `categoryId`. Never invent a category. Use `query` for keyword interests
+   that are not catalog categories; do not silently broaden the user's request.
 3. Do not call `search_products` and assemble a launch shortlist yourself. The
    product-validation action owns discovery, entitled product retrieval, hard gates,
    deterministic economics, preliminary ranking, Trend Analysis for the
@@ -200,8 +202,17 @@ reliably.
 7. After the user explicitly approves a candidate, call
    `record_launch_approval` with `checkpoint: product`, `decision: approve`, and
    `details.productId` set to the selected candidate ID.
-8. If the user rejects the comparison, record `decision: reject`. Do not rerun
-   or revise the stage without the user's direction.
+8. If the user rejects the comparison, record `decision: reject`, then call
+   `run_product_validation` with a new idempotency key to find alternatives
+   unless the user asked to stop. Keep the same project, budget, market, and
+   latest filters; rejected products are excluded. For requested replacements
+   or changed filters before product approval, use `refresh: true`. Retry the
+   same operation with the same key. Omitted filters retain the previous search;
+   use `categoryId: null` or `query: null` only to remove a restriction the user
+   asked to remove. If too few alternatives remain, ask about broader filters
+   and stop unchanged retries. Recover a legacy rejected `candidates_ready`
+   state with this tool, not a new project. After success display the new
+   checkpoint; never approve a stale or browse-only candidate.
 9. Preserve each returned direct Ecomhunt product link exactly. Do not replace it
    with a title-only link, omit it from the comparison, or reconstruct it.
 

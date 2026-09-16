@@ -13,13 +13,22 @@
 4. Ask only returned blocking questions, if any, and repeat
    `complete_launch_intake` with newly confirmed facts.
 5. Stop at `brief_ready` when product discovery is not requested.
-6. Otherwise call `run_product_validation`, then call `get_launch_checkpoint`
+6. For a category request, first resolve a real `categoryId` with
+   `get_product_categories`; use `query` for keywords instead of invented
+   categories. Then call `run_product_validation`, followed by `get_launch_checkpoint`
    with `checkpoint: product`. When its UI is displayed, give a short
    recommendation and material risks without duplicating the table. If UI
    rendering is unavailable, present the full saved top-three comparison.
 7. Ask for one explicit product decision at `candidates_ready`.
 8. Call `record_launch_approval` with the selected `details.productId` only after
    explicit approval.
+   On rejection, record `decision: reject`, then find alternatives in the SAME
+   project with `run_product_validation` and a new idempotency key unless the
+   user asked to pause. Requested replacements use `refresh: true`; retries
+   reuse that operation's key. Keep the latest filters and excluded rejected
+   products. Omitted filters are retained; explicit null clears categoryId/query.
+   If alternatives are insufficient, ask about broadening and stop unchanged
+   retries. Never use standalone search results as validated launch candidates.
 9. At `product_approved`, call `get_product_visual_context` without asking for
    another continuation.
 10. Analyze every labeled native image jointly and create the complete
@@ -244,8 +253,8 @@ The Skill must not simulate unfinished stages. In particular:
 - do not ask whether to continue after ordinary internal steps, but respect an
   explicit user instruction to stop before product discovery;
 - at `brief_ready`, run product validation only when requested;
-- at `candidates_ready`, do not continue until the user chooses and approves a
-  candidate;
+- at `candidates_ready`, do not advance to market research until the user
+  approves a candidate; rejection follows the replacement-shortlist flow above;
 - at `product_approved`, use `get_product_visual_context`,
   `submit_product_visual_analysis`, `get_market_research_context`, and
   `submit_market_research` without an added user checkpoint;
