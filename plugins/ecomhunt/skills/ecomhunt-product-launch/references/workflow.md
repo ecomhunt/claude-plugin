@@ -15,20 +15,36 @@
 5. Stop at `brief_ready` when product discovery is not requested.
 6. For a category request, first resolve a real `categoryId` with
    `get_product_categories`; use `query` for keywords instead of invented
-   categories. Then call `run_product_validation`, followed by `get_launch_checkpoint`
-   with `checkpoint: product`. When its UI is displayed, give a short
-   recommendation and material risks without duplicating the table. If UI
-   rendering is unavailable, present the full saved top-three comparison.
-7. Ask for one explicit product decision at `candidates_ready`.
+   categories. Then call `run_product_validation`, followed by
+   `get_launch_checkpoint` with `checkpoint: product` and the same `projectId`
+   before presenting candidates, even when validation returns a complete
+   comparison. When its UI is displayed, give a short recommendation and
+   material risks without duplicating the table. Use the full saved text
+   comparison only if the display tool is unavailable or the attempted display
+   cannot render the UI.
+7. After the product checkpoint returns `checkpoint_ready`, ask for one explicit
+   product decision. Follow that response rather than reopening the checkpoint
+   simply because the project still reports `candidates_ready`.
 8. Call `record_launch_approval` with the selected `details.productId` only after
    explicit approval.
+   A **Select & continue** message counts as that approval. Pass its exact
+   `projectId`, `details.productId`, `expectedApprovalId`, and
+   `expectedApprovalVersion` unchanged. Confirm approval after tool success,
+   then continue. If stale, first call `get_launch_project` with that exact
+   `projectId`. Display the product checkpoint only at `candidates_ready` with
+   a pending product approval, then wait for a new choice. Otherwise report the
+   current state and keep the saved decision; do not reopen product approval.
+   Never replace or omit expected IDs to retry. Ask before revising an already
+   approved choice.
    On rejection, record `decision: reject`, then find alternatives in the SAME
    project with `run_product_validation` and a new idempotency key unless the
    user asked to pause. Requested replacements use `refresh: true`; retries
    reuse that operation's key. Keep the latest filters and excluded rejected
    products. Omitted filters are retained; explicit null clears categoryId/query.
    If alternatives are insufficient, ask about broadening and stop unchanged
-   retries. Never use standalone search results as validated launch candidates.
+   retries. After a successful replacement, repeat the product display and
+   decision sequence in steps 6–7. Never use standalone search results as
+   validated launch candidates.
 9. At `product_approved`, call `get_product_visual_context` without asking for
    another continuation.
 10. Analyze every labeled native image jointly and create the complete
@@ -153,6 +169,10 @@
    completed project or package, otherwise default to `status: active`.
 2. Read the saved `nextAction` and pending approval.
 3. Continue only with the tool allowed by that state.
+   For a pending product decision at `candidates_ready`, call
+   `get_launch_checkpoint` with `checkpoint: product` and the saved `projectId`,
+   then follow its approval instructions. Apply the same UI and text-fallback
+   rules as steps 6–7 above. Do not rerun validation just to reopen saved results.
 4. At `product_approved`, use the Claude-active visual-context, visual-submission,
    market-context, and market-submission sequence. Never call a server-generated
    market-synthesis fallback.

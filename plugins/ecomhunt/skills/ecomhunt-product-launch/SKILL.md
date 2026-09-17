@@ -1,7 +1,7 @@
 ---
 name: ecomhunt-product-launch
 description: This skill should be used whenever the user asks to "build me a Shopify store", "build me a $10K/month store", "find me a winning product for my store", "find me a $10K winning product", "start an Ecomhunt launch project", or "resume my Ecomhunt launch project". Use it for multi-stage Ecomhunt launch work involving a new store or an existing Shopify store, even when the user does not explicitly mention MCP. Do not use it for a simple one-off request to list products or retrieve one known product.
-version: 0.20.0
+version: 0.21.1
 ---
 
 # Ecomhunt Product Launch
@@ -93,6 +93,7 @@ persistent product-validation stage.
     publish advertising.
 24. At a saved product, market, brand, name, or credit decision point, call
     `get_launch_checkpoint` for that exact checkpoint before asking the user.
+    For product comparisons, this also precedes presenting the candidates.
     This display tool never records approval or spends credits. Do not call it
     after validation errors or during automatic work.
 25. Keep `get_creative_review` as the native image source. After all three native
@@ -187,21 +188,40 @@ reliably.
    deterministic economics, preliminary ranking, Trend Analysis for the
    shortlisted products, final ranking, persistence, and the checkpoint.
 4. After successful validation, call `get_launch_checkpoint` with
-   `checkpoint: product`. When the comparison UI is displayed, follow it with a
-   short recommendation, material risks, and one approval question. Do not repeat
-   the full table or every metric in chat. When UI rendering is unavailable or
-   fails, present the complete comparison from the structured result, including each product's
+   `checkpoint: product` and the same saved `projectId` before presenting the
+   candidates or asking for approval. Complete product data in the validation
+   result does not replace this display step. Once the checkpoint returns
+   `checkpoint_ready`, follow its user-decision instructions; do not call the
+   display tool again merely because the project remains `candidates_ready`.
+   When the comparison UI is displayed, follow it with a short recommendation,
+   material risks, and one approval question without repeating the full table
+   or every metric in chat. Attempt the display whenever the tool is available.
+   Use the text fallback only when the display tool is unavailable or the
+   attempted display cannot render the UI. In that fallback, present the
+   complete comparison from the structured result, including each product's
    `Test`, `Watch`, or `Reject` verdict, exact direct Ecomhunt product URL, budget fit, known
    contribution before unknown costs, important evidence, failed gates, and
    largest uncertainty, and saved Trend Analysis assessment.
 5. Never present known contribution as landed profit. Shipping, fulfillment,
    fees, taxes, returns, reships, and support can remain unknown. Report
    seasonality or launch timing as `Unknown` whenever Ecomhunt returns Unknown.
-6. Ask the user to choose one eligible candidate. Do not automatically approve
+6. Ask the user to choose one eligible candidate using **Select & continue** or
+   by typing their choice. Do not automatically approve
    the recommendation and do not allow a `Reject` candidate to advance.
 7. After the user explicitly approves a candidate, call
    `record_launch_approval` with `checkpoint: product`, `decision: approve`, and
    `details.productId` set to the selected candidate ID.
+   A **Select & continue** user message is explicit product approval; no second
+   typed confirmation is needed. Copy its exact `projectId`, `details.productId`,
+   `expectedApprovalId`, and `expectedApprovalVersion` into the approval call.
+   The UI's **Selection sent** only acknowledges message delivery. Confirm the
+   product approval only after the tool succeeds, then follow the saved
+   `nextAction`. If the selection is stale, first call `get_launch_project`
+   with the selection's exact `projectId`. Only at `candidates_ready` with a
+   pending product approval, display the product checkpoint and wait for a new
+   choice. Otherwise report the current state and preserve the saved decision;
+   do not reopen product approval. Never retry by replacing or omitting the
+   expected approval fields. Ask before revising an already approved choice.
 8. If the user rejects the comparison, record `decision: reject`, then call
    `run_product_validation` with a new idempotency key to find alternatives
    unless the user asked to stop. Keep the same project, budget, market, and
@@ -211,8 +231,9 @@ reliably.
    use `categoryId: null` or `query: null` only to remove a restriction the user
    asked to remove. If too few alternatives remain, ask about broader filters
    and stop unchanged retries. Recover a legacy rejected `candidates_ready`
-   state with this tool, not a new project. After success display the new
-   checkpoint; never approve a stale or browse-only candidate.
+   state with this tool, not a new project. After success repeat step 4 for the
+   new product checkpoint before requesting a decision; never approve a stale
+   or browse-only candidate.
 9. Preserve each returned direct Ecomhunt product link exactly. Do not replace it
    with a title-only link, omit it from the comparison, or reconstruct it.
 
@@ -505,6 +526,10 @@ reliably.
    budget semantics, current state, completed stages, pending approval, and next
    action.
 4. Continue from the saved next action; never create a replacement project.
+   At `candidates_ready` with a pending product approval, call
+   `get_launch_checkpoint` with `checkpoint: product` and the saved `projectId`,
+   then use the presentation and approval sequence in **Validate Product
+   Candidates**. Do not rerun validation just to display the saved shortlist.
 5. At `market_approved`, use `get_brand_strategy_context` and
    `submit_brand_strategy`. At `brand_ready`, call `get_launch_checkpoint` with
    `checkpoint: brand`, present the accepted submission, and ask for one exact
@@ -547,8 +572,9 @@ optional value is locked in when Ecomhunt did not persist it as user supplied.
 Do not combine the user's commercial wording with an Ecomhunt-derived planning
 objective. At `brief_ready`, say `Product selection and validation is ready.`
 when product discovery was not requested. At `candidates_ready`, call
-`get_launch_checkpoint` with `checkpoint: product` and show the saved
-top-three comparison and ask for one explicit product decision. At
+`get_launch_checkpoint` with `checkpoint: product` and the saved `projectId`
+before presenting the saved top-three comparison. Then follow the returned
+approval instructions without reopening the same checkpoint. At
 `product_approved`, immediately run the product visual context, visual
 submission, market context, and market submission sequence without an added
 checkpoint. At `market_ready`, call `get_launch_checkpoint` with

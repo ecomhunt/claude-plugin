@@ -49,8 +49,14 @@ Expected behavior:
 
 - resume the saved project rather than creating another one;
 - call `run_product_validation` at `brief_ready`;
-- present the saved top-three comparison with exact direct Ecomhunt product URLs, verdicts, budget
-  fit, economics caveats, evidence, and uncertainty;
+- after success, call `get_launch_checkpoint` with `checkpoint: product` and the
+  same saved `projectId` before presenting candidates, even if validation
+  already returned their full details;
+- use the displayed comparison, then give a short recommendation, material
+  risks, and one approval question;
+- if the display tool is unavailable or its attempted display cannot render,
+  present the complete saved comparison with exact Ecomhunt product URLs,
+  verdicts, budget fit, economics caveats, evidence, and uncertainty;
 - label supplier orders as historical demand evidence;
 - present each candidate's saved Ecomhunt Trend Analysis, including its resolved
   concept, long-term direction, timing pattern, and top countries when available;
@@ -58,7 +64,25 @@ Expected behavior:
   or unavailable;
 - describe Google Trends as search-interest evidence, not sales or profit proof;
 - ask the user to choose one eligible candidate;
+- after `checkpoint_ready`, wait for the decision instead of reopening the
+  same checkpoint because the project still reports `candidates_ready`;
 - do not approve a product or begin market research automatically.
+
+## Request Different Product Candidates
+
+```text
+Show me different kitchen products using the same budget and filters.
+```
+
+Expected behavior:
+
+- reuse the active project and its saved filters before product approval;
+- call `run_product_validation` with `refresh: true` and a new idempotency key;
+- after success, call `get_launch_checkpoint` with `checkpoint: product` and
+  that same project ID before comparing the replacements or asking for approval;
+- follow the checkpoint response for the decision without repeating its UI;
+- if too few alternatives remain, ask about broader filters instead of
+  displaying the previous shortlist as new results.
 
 ## Approve A Product
 
@@ -73,6 +97,28 @@ Expected behavior:
   and that numeric `details.productId`;
 - report the selected product and `product_approved` state;
 - state that market and buyer research is ready.
+
+## Select A Product With The Button
+
+The user clicks **Select & continue** on an eligible product. The UI sends a
+user message containing the exact `projectId`, `details.productId`,
+`expectedApprovalId`, and `expectedApprovalVersion` for that comparison.
+
+Expected behavior:
+
+- treat the click message as explicit product approval without asking for a
+  second typed confirmation;
+- pass all four values unchanged to `record_launch_approval`, with
+  `checkpoint: product` and `decision: approve`;
+- treat **Selection sent** as delivery feedback, not a saved approval;
+- confirm the choice only after tool success, then follow `nextAction`;
+- if the selection is stale, first call `get_launch_project` with its exact
+  `projectId`; display the product checkpoint only at `candidates_ready` with
+  a pending product approval and wait for a fresh choice;
+- if the project already advanced or has no pending product approval, report
+  its current state and keep the saved decision; do not reopen product approval
+  or replace or omit the expected approval fields to retry;
+- if messaging is unavailable, accept an explicit typed choice as before.
 
 ## Continue To Market Research
 
@@ -282,7 +328,12 @@ Expected behavior:
 - call `get_launch_project` without a project ID;
 - return the saved project;
 - create nothing;
-- distinguish user-supplied and Ecomhunt-derived values.
+- if a product decision is pending at `candidates_ready`, call
+  `get_launch_checkpoint` with `checkpoint: product` and the returned project ID
+  before presenting the candidates; use its approval instructions and the same
+  UI/text-fallback rules as the product-validation example;
+- do not rerun product discovery just to show the saved candidates;
+- distinguish user-supplied and Ecomhunt-derived values;
 - omit optional fields that remain unspecified.
 
 ## Anti-Examples
